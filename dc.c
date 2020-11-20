@@ -81,15 +81,29 @@ bool logaritmo(calc_num argumento, calc_num base, calc_num* res)
     return true;
 }
 
+calc_num cuadrado(calc_num n)
+{
+    return n * n;
+}
+
+calc_num _raiz_entera(calc_num inicio, calc_num fin, calc_num n)
+{
+	long int mitad = (inicio + fin) / 2;
+	if((cuadrado(mitad) <= n) && (cuadrado(mitad+1) > n)) return mitad;
+	if(cuadrado(mitad) > n) return _raiz_entera(inicio, mitad - 1, n);
+	return _raiz_entera(mitad+1, fin, n);
+}
+
 bool raiz_entera(calc_num n, calc_num* res)
 {
-    *res = (calc_num) sqrt((double) n);
+    if(n < 0) return false;
+    *res = _raiz_entera(0, n, n);
     return true;
 }
 
+
 bool calcular(calc_num operandos[], enum oper_type op, calc_num* res)
 {
-    bool ok = true;
     switch(op)
     {
         case(OP_ADD): return suma(operandos[0], operandos[1], res);

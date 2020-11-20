@@ -1,8 +1,0 @@
-
-
-La idea es que a cada string le ponga calc_parse, y me guarda un struct con informacion sobre lo guardado en un calc_token
-Con ese calc_token, tengo ya sea el valor o la operacion.
-
-
-
-https://meet.google.com/yei-dxvj-iok

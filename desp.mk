@@ -1,0 +1,1 @@
+dc: dc.o pila.o calc_herlper.o strutil.o
