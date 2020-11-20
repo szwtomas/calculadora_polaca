@@ -25,22 +25,6 @@ void liberar_memoria(pilanum_t* pila, char** strv)
     free_strv(strv);
 }
 
-
-/*
-enum oper_type {
-    OP_ADD,   // suma, +
-    OP_SUB,   // resta, -
-    OP_MUL,   // multiplicación, *
-    OP_DIV,   // división entera, /
-    OP_POW,   // potencia, ^
-    OP_LOG,   // logaritmo, "log"
-    OP_RAIZ,  // raíz cuadrada, "sqrt"
-    OP_TERN,  // operador ternario, ?:
-};
-*/
-
-
-
 bool suma(calc_num sum_1, calc_num sum_2, calc_num* res)
 {
     *res = sum_1 + sum_2;
@@ -92,8 +76,28 @@ bool logaritmo(calc_num argumento, calc_num base, calc_num* res)
 {
     if(base < 2) return false;
 
+    double log_1 = log((double) argumento);
+    double log_2 = log((double) base);
+    double cociente = (double) log_1 / log_2;
+
+    *res = (calc_num) cociente;
+    return true;
 }
 
+long int _raiz_entera(calc_num inicio, calc_num fin, calc_num n)
+{
+    calc_num medio = (inicio + fin) / 2;
+    if((pow(medio, medio) <= n) && (pow(medio+1, medio+1) > n)) return medio;
+    if(pow(medio, medio) > n) return _raiz_entera(inicio, medio - 1, n);
+    return _raiz_entera(medio + 1, fin, n);
+}
+
+bool raiz_entera(calc_num n, calc_num* res)
+{
+    if(n < 0) return false;
+    *res = _raiz_entera(0, n, n);
+    return true;
+}
 
 bool calcular(calc_num operandos[], enum oper_type op, calc_num* res)
 {
