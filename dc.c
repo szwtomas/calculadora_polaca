@@ -69,7 +69,7 @@ bool ternario(calc_num opcion_cero, calc_num opcion_no_cero, calc_num condicion,
     return true;
 }
 
-bool logaritmo(calc_num argumento, calc_num base, calc_num* res)
+bool logaritmo(calc_num base, calc_num argumento, calc_num* res)
 {
     if(base < 2) return false;
 
