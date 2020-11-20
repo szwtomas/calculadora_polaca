@@ -26,9 +26,9 @@ int calcular_cantidad_operandos(enum oper_type oper)
     }
 }
 
-void cantidad_operandos(calc_operador calc_op)
+void cantidad_operandos(calc_operador* calc_op)
 {
-    calc_op.cant_operandos = calcular_cantidad_operandos(calc_op.op);
+    calc_op->cant_operandos = calcular_cantidad_operandos(calc_op->op);
 }
 
 enum token_type tipo_token(struct calc_token tok)

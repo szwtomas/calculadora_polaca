@@ -116,7 +116,7 @@ typedef struct calc_oper {  // Para tokens TOK_OPER
 /*
 Asigna al struct calc_oper la cantidad de operandos correspondiente
 */
-void cantidad_operandos(calc_operador calc_op);
+void cantidad_operandos(calc_operador* calc_op);
 
 
 /*

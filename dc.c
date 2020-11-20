@@ -6,8 +6,6 @@
 #include "strutil.h"
 #include "calc_helper.h"
 
-#define MAX_OPERANDOS 3
-
 void mostrar_resultado(bool res_valido, long int resultado)
 {
     if(!res_valido)
@@ -15,9 +13,8 @@ void mostrar_resultado(bool res_valido, long int resultado)
         fprintf(stdout, "%s\n", "ERROR");
         return;
     }
-    fprintf(stdout, "%i\n", resultado);
+    fprintf(stdout, "%li\n", resultado);
 }
-
 
 void liberar_memoria(pilanum_t* pila, char** strv)
 {
@@ -84,18 +81,9 @@ bool logaritmo(calc_num argumento, calc_num base, calc_num* res)
     return true;
 }
 
-long int _raiz_entera(calc_num inicio, calc_num fin, calc_num n)
-{
-    calc_num medio = (inicio + fin) / 2;
-    if((pow(medio, medio) <= n) && (pow(medio+1, medio+1) > n)) return medio;
-    if(pow(medio, medio) > n) return _raiz_entera(inicio, medio - 1, n);
-    return _raiz_entera(medio + 1, fin, n);
-}
-
 bool raiz_entera(calc_num n, calc_num* res)
 {
-    if(n < 0) return false;
-    *res = _raiz_entera(0, n, n);
+    *res = (calc_num) sqrt((double) n);
     return true;
 }
 
@@ -131,9 +119,15 @@ bool realizar_operacion(pilanum_t* pila, calc_operador oper)
         }
     }
     bool ok = calcular(operandos, oper.op, &res);
+    if(!ok) return false;
 
+    apilar_num(pila, res);
+    return true;
 }
 
+//Parsea y calcula el resultado de la linea pasada
+//Almacena el resultado final en 'resultado'
+//En caso de tener cualquier error, devuelve false
 bool calcular_linea(char* linea, long int* resultado)
 {
     char** strv = dc_split(linea);
@@ -146,6 +140,7 @@ bool calcular_linea(char* linea, long int* resultado)
     size_t i=0;
     while(strv[i])
     {
+        
         token_valido = calc_parse(strv[i], &tok);
         if(!token_valido)
         {
@@ -159,6 +154,7 @@ bool calcular_linea(char* linea, long int* resultado)
         }
         else if(tipo_token(tok) == TOK_OPER)
         {
+            cantidad_operandos(&(tok.oper));
             token_valido = realizar_operacion(pila, tok.oper);
             if(!token_valido)
             {
@@ -173,13 +169,15 @@ bool calcular_linea(char* linea, long int* resultado)
         }
         i++;
     }   
-    //chequear despues, tendria que quedar un elemento para desapilar (esto esta mal) 
-    /*if(desapilar_num(pila, &res))
+    calc_num res;
+    desapilar_num(pila, &res);
+    *resultado = (long int) res;
+    if(!pila_esta_vacia(pila))
     {
         liberar_memoria(pila, strv);
         return false;
     }
-    */
+
     liberar_memoria(pila, strv);
     return true;
 }
