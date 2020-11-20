@@ -26,6 +26,20 @@ int calcular_cantidad_operandos(enum oper_type oper)
     }
 }
 
+//3 para ^, 2 para * y /, 1 para + y -
+void asignar_precedencia(calc_operador* calc_op)
+{
+    if(calc_op->op == OP_POW) calc_op->precedencia = 3;
+    else if((calc_op->op == OP_MUL) || (calc_op->op == OP_DIV)) calc_op->precedencia = 2;
+    else calc_op->precedencia = 1;
+}
+
+void asignar_asociatividad(calc_operador* calc_op)
+{
+    if(calc_op->op == OP_POW) calc_op->asociatividad = ASSOS_DER;
+    else calc_op->asociatividad = ASSOS_IZQ;
+}
+
 void cantidad_operandos(calc_operador* calc_op)
 {
     calc_op->cant_operandos = calcular_cantidad_operandos(calc_op->op);

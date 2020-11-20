@@ -93,9 +93,18 @@ enum oper_type {
 
 typedef long int calc_num;  // Para tokens TOK_NUM
 
+enum assos
+{
+    ASSOS_IZQ, //operador es asociativo hacia la izquierda
+    ASSOS_DER, //operador es asociativo hacia la derecha
+};
+
 typedef struct calc_oper {  // Para tokens TOK_OPER
     enum oper_type op;
     int cant_operandos;
+    enum assos asociatividad;
+    int precedencia; //3 para ^, 2 para * y /, 1 para + y -
+
     // AYUDA: la implementación de dc puede simplificarse en ciertos aspectos si
     // el struct que representa un operador incluye el número de operandos que
     // precisa. Se recomienda modificar calc_helper.c para que proporcione el
@@ -117,6 +126,16 @@ typedef struct calc_oper {  // Para tokens TOK_OPER
 Asigna al struct calc_oper la cantidad de operandos correspondiente
 */
 void cantidad_operandos(calc_operador* calc_op);
+
+/*
+Asigna la precedencia del operador
+*/
+void asignar_precedencia(calc_operador* calc_op);
+
+/*
+Asigna la asociatividad del operador
+*/
+void asignar_asociatividad(calc_operador* calc_op);
 
 
 /*
