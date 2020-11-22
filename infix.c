@@ -7,6 +7,7 @@
 #include "calc_helper.h"
 #include "cola.h"
 
+
 void liberar_mem(pila_t* pila, cola_t* cola, char** strv)
 {
     if(pila) pila_destruir(pila);
@@ -42,62 +43,86 @@ void encolar_token(cola_t* cola, struct calc_token* tok)
         str = malloc((tam+1) * sizeof(char));
         sprintf(str, "%li", tok->value);
     }
-    printf("%s\n", str);
     cola_encolar(cola, str);
 }
 
-
-
-
-//devuelve falso si hay que seguir desapilando, verdadero si hay que cortar
-bool comparar_operadores(calc_operador op_1, calc_operador op_2)
+void desapilar_hasta_parentesis(pila_t* pila, cola_t* cola, size_t* cont)
 {
-    if((op_1.asociatividad == ASSOS_IZQ) && (op_1.precedencia <= op_2.precedencia)) return false;
-    if((op_1.asociatividad == ASSOS_DER) && (op_1.precedencia < op_2.precedencia)) return false;
-    return true;
+    struct calc_token* tok = pila_desapilar(pila);
+    int i=0;
+    while(tok->type != TOK_LPAREN)
+    {
+        
+        encolar_token(cola, tok);
+        (*cont)++;
+        tok = pila_desapilar(pila);
+        i++;
+    }
+}
+
+bool seguir_desapilando(calc_operador op_1, calc_operador op_2)
+{
+    if((op_1.asociatividad == ASSOS_IZQ) && (op_1.precedencia <= op_2.precedencia)) return true;
+    if((op_1.asociatividad == ASSOS_DER) && (op_1.precedencia < op_2.precedencia)) return true;
+    return false;
 }
 
 void desapilar_operaciones(pila_t* pila, cola_t* cola, struct calc_token* tok, size_t* cont)
 {
-    asignar_precedencia(&(tok->oper));
-    asignar_asociatividad(&(tok->oper));
     struct calc_token* tok_2;
-    bool cortar = false;
-
-    while(!pila_esta_vacia(pila) && !cortar)
+    while(!pila_esta_vacia(pila))
     {
         tok_2 = (struct calc_token*) pila_ver_tope(pila);
-        if(tok_2->type == TOK_OPER)
+        if(tok_2->type != TOK_OPER) break;
+        if(seguir_desapilando(tok->oper, tok_2->oper))
         {
-            asignar_precedencia(&(tok_2->oper));
-            asignar_asociatividad(&(tok_2->oper));
-            cortar = comparar_operadores(tok->oper, tok_2->oper);
-            if(!cortar)
-            {
-                encolar_token(cola, (struct calc_token*) pila_desapilar(pila));
-                (*cont)++;
-            }
+            encolar_token(cola, pila_desapilar(pila));
+            (*cont)++;
         }
         else
         {
-            cortar = true;
+            break;
         }
-        
     }
 }
 
-void encolar_operaciones(pila_t* pila, cola_t* cola, size_t* cont)
+void encolar_restantes(pila_t* pila, cola_t* cola, size_t* cont)
 {
-    struct calc_token* aux;
-    if(pila_esta_vacia(pila)) return;
-    aux = (struct calc_token*) pila_ver_tope(pila);
-    while(aux->type != TOK_LPAREN || !pila_esta_vacia(pila)) //Si los parentesis estan completos no se vacia la pila
+    while(!pila_esta_vacia(pila))
     {
         encolar_token(cola, pila_desapilar(pila));
-        *(cont)++;
-        aux = (struct calc_token*) pila_ver_tope(pila);
+        (*cont)++;
     }
-    pila_desapilar(pila); //desapilo el parentesis
+}
+
+//desencola los elementos en un arreglo de cadenas
+void cola_a_arr(cola_t* cola, char* strv[])
+{
+    size_t i=0;
+    while(!cola_esta_vacia(cola))
+    {
+        strv[i] = cola_desencolar(cola);
+        i++;
+    }
+    strv[i] = NULL;
+}
+
+void mostrar_tipo(struct calc_token* tok) //despues borrar
+{
+    if(tok->type == TOK_NUM) printf("Es TOK_NUM\n");
+    if(tok->type == TOK_OPER) printf("Es TOK_OPER\n");
+    if(tok->type == TOK_LPAREN) printf("Es TOK_LPAREN\n");
+    if(tok->type == TOK_RPAREN) printf("Es TOK_RPAREN\n"); 
+}
+
+size_t tam_strv(char** strv)
+{
+    size_t i=0;
+    while(strv[i])
+    {
+        i++;
+    }
+    return i;
 }
 
 char* conversor(char* linea)
@@ -112,73 +137,63 @@ char* conversor(char* linea)
         liberar_mem(pila, cola, strv);
         return NULL;
     }
-    size_t cont=0;
-    size_t i=0;
+    struct calc_token operadores[tam_strv(strv)]; //guardo los operadores en un array para no apilar el mismo puntero
+    size_t cant_op=0;
 
+    size_t i=0;
+    size_t cont=0; //cuenta la cantidad de elementos encolados
     while(strv[i])
     {
-        calc_parse(strv[i], &tok); //error!!!!! estoy apilando direcciones IGUALES de memoria
-        if(tok.type == TOK_NUM)
+        calc_parse(strv[i], &tok);
+        switch(tok.type)
         {
-            encolar_token(cola, &tok);
-            cont++;
+            case(TOK_NUM):
+                encolar_token(cola, &tok);
+                cont++;
+                break;
+            case(TOK_OPER):
+                operadores[cant_op] = tok;
+                desapilar_operaciones(pila, cola, &tok, &cont);
+                pila_apilar(pila, &(operadores[cant_op]));
+                cant_op++;
+                break;
+            case(TOK_LPAREN):
+                operadores[cant_op] = tok;
+                pila_apilar(pila, &(operadores[cant_op]));
+                cant_op++;
+                break;
+            case(TOK_RPAREN):
+                desapilar_hasta_parentesis(pila, cola, &cont);
+                break;
+            default:
+                liberar_mem(pila, cola, strv);
+                return NULL;
         }
-        else if(tok.type == TOK_OPER)
-        {
-            desapilar_operaciones(pila, cola, &tok, &cont);
-            pila_apilar(pila, &tok);
-        }
-        else if(tok.type == TOK_LPAREN)
-        {
-            pila_apilar(pila, &tok);
-        }
-        else
-        {
-            encolar_operaciones(pila, cola, &cont);
-        }
-
         i++;
     }
-    while(!pila_esta_vacia(pila))
-    {
-        encolar_token(cola, pila_desapilar(pila));
-        cont++;
-    }
-    //hasta aca tengo una cola de strings en el orden correcto, y un contador con la # de encolados
+    encolar_restantes(pila, cola, &cont);
 
-    char* arr[cont];
-    i=0;
-    while(!cola_esta_vacia(cola))
-    {
-        arr[i] = (char*) cola_desencolar(cola);
-        i++;
-    }
+    char* str_ordenado[cont + 1];
+    cola_a_arr(cola, str_ordenado);
 
-    char* linea_convertida = join(arr, ' ');
-    
     liberar_mem(pila, cola, strv);
-    return linea_convertida;
+    return join(str_ordenado, ' ');
 }
-
 
 int main(int argc, char* argv[])
 {
     char* linea = NULL;
-    size_t tam = 0;
+    size_t tam;
     char* convertida;
 
     while(getline(&linea, &tam, stdin) != EOF)
     {
-        convertida = conversor(linea); //con memoria dinamica
-        if(!convertida)
-        {
-            free(linea);
-            return 1;
-        }
+        convertida = conversor(linea);
+        if(!convertida) break;
         fprintf(stdout, "%s\n", convertida);
         free(convertida);
     }
+
     free(linea);
     return 0;
 }
-
