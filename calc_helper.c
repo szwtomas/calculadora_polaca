@@ -10,7 +10,6 @@
 #include <string.h>
 
 
-
 int calcular_cantidad_operandos(enum oper_type oper) 
 {
     switch(oper)
@@ -49,8 +48,6 @@ enum token_type tipo_token(struct calc_token tok)
 {
     return tok.type;
 }
-
-
 
 
 //
@@ -106,6 +103,12 @@ bool calc_parse(const char *tok, struct calc_token *parsed) {
         }
         else {
             return false;
+        }
+        if(op != '(' && op != ')')
+        {
+            asignar_precedencia(&(parsed->oper));
+            asignar_asociatividad(&(parsed->oper));
+            
         }
     }
     else if (strcmp(tok, "log") == 0) {
