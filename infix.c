@@ -2,12 +2,11 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 #include "strutil.h"
 #include "calc_helper.h"
 #include "cola.h"
 
-
+//Libera la memoria toda la memoria dinamica asociada al conversor
 void liberar_mem(pila_t* pila, cola_t* cola, char** strv)
 {
     if(pila) pila_destruir(pila);
@@ -15,6 +14,9 @@ void liberar_mem(pila_t* pila, cola_t* cola, char** strv)
     if(strv) free_strv(strv);
 }
 
+//Parsea del token al caracter del operador
+//Pre-Condiciones: El operador es de suma, resta, producto, division o potencia
+//Post: Devuelve el caracter correspondiente al operador 
 char seleccionar_operador(calc_operador oper)
 {
     switch(oper.op)
@@ -24,9 +26,21 @@ char seleccionar_operador(calc_operador oper)
         case(OP_MUL): return '*';
         case(OP_DIV): return '/';
         case(OP_POW): return '^';
+        default: return '\0';
     }
+    return '\0'; //No deberia llegar nunca aca
 }
 
+//Devuelve la cantidad de espacios necesarios para parsear un numero a cadena
+size_t cantidad_digitos(calc_num num)
+{
+    if(num > -9 && num < 9) return 1;
+    return 1 + cantidad_digitos(num / 10);
+}
+
+//Encola un token recibido como cadena
+//Pre-Condiciones: El token es una operacion o un numero
+//Post: Encola el string en la cola recibida
 void encolar_token(cola_t* cola, struct calc_token* tok)
 {
     size_t tam;
@@ -39,13 +53,17 @@ void encolar_token(cola_t* cola, struct calc_token* tok)
     }
     else
     {
-        tam = (size_t) ceil(log10(tok->value)); //devuelve la cantidad de digitos
+        tam = cantidad_digitos(tok->value);
+        if(tok->value < 0) tam++;
         str = malloc((tam+1) * sizeof(char));
         sprintf(str, "%li", tok->value);
     }
     cola_encolar(cola, str);
 }
 
+//Desapila tokens de la pila y los encola hasta llegar a un parentesis, que es desapilado pero no encolado
+//Pre: Los parentesis en la expresion deben estar todos balanceados
+//Post: Los elementos fueron desapilados y encolados
 void desapilar_hasta_parentesis(pila_t* pila, cola_t* cola, size_t* cont)
 {
     struct calc_token* tok = pila_desapilar(pila);
@@ -60,6 +78,8 @@ void desapilar_hasta_parentesis(pila_t* pila, cola_t* cola, size_t* cont)
     }
 }
 
+
+//Devuelve true si es necesario seguir desapilando operadores, devuelve false si hay que cortar
 bool seguir_desapilando(calc_operador op_1, calc_operador op_2)
 {
     if((op_1.asociatividad == ASSOS_IZQ) && (op_1.precedencia <= op_2.precedencia)) return true;
@@ -67,6 +87,7 @@ bool seguir_desapilando(calc_operador op_1, calc_operador op_2)
     return false;
 }
 
+//Desapila operadores dependiendo de su precedencia y asociatividad
 void desapilar_operaciones(pila_t* pila, cola_t* cola, struct calc_token* tok, size_t* cont)
 {
     struct calc_token* tok_2;
@@ -86,6 +107,8 @@ void desapilar_operaciones(pila_t* pila, cola_t* cola, struct calc_token* tok, s
     }
 }
 
+//Encola todos los elementos restantes en la pila, que queda vacia
+//Post: La pila queda vacia, sus elementos fueron encolados
 void encolar_restantes(pila_t* pila, cola_t* cola, size_t* cont)
 {
     while(!pila_esta_vacia(pila))
@@ -96,6 +119,8 @@ void encolar_restantes(pila_t* pila, cola_t* cola, size_t* cont)
 }
 
 //desencola los elementos en un arreglo de cadenas
+//Pre: La cola tiene encolados en orden correcto la expresion polaca inversa como tokens
+//Post: El arreglo tiene los strings en el orden correcto, la cola queda vacia
 void cola_a_arr(cola_t* cola, char* strv[])
 {
     size_t i=0;
@@ -107,14 +132,7 @@ void cola_a_arr(cola_t* cola, char* strv[])
     strv[i] = NULL;
 }
 
-void mostrar_tipo(struct calc_token* tok) //despues borrar
-{
-    if(tok->type == TOK_NUM) printf("Es TOK_NUM\n");
-    if(tok->type == TOK_OPER) printf("Es TOK_OPER\n");
-    if(tok->type == TOK_LPAREN) printf("Es TOK_LPAREN\n");
-    if(tok->type == TOK_RPAREN) printf("Es TOK_RPAREN\n"); 
-}
-
+//Devuelve el tamanio del arreglo ya spliteado, para poder armar el arreglo de operadores
 size_t tam_strv(char** strv)
 {
     size_t i=0;
@@ -125,6 +143,11 @@ size_t tam_strv(char** strv)
     return i;
 }
 
+//Convierte una cadena en notacion posfija en una de notacion polaca inversa. Devuelve una cadena DINAMICA 
+//que luego debe ser liberada por quien llama la funcion
+//Pre-Condiciones: La linea recibida solo tiene los operadores +, -, ^, *, ( y ), todos los 
+//parentesis estan bien balanceados, los numeros son enteros y correctamente espaceados
+//Post: Devuelve una cadena con memoria dinamica de la linea recibida en notacion polaca invesa
 char* conversor(char* linea)
 {
     char** strv = infix_split(linea);
@@ -173,11 +196,13 @@ char* conversor(char* linea)
     }
     encolar_restantes(pila, cola, &cont);
 
-    char* str_ordenado[cont + 1];
+    char** str_ordenado = malloc((cont+1) * sizeof(char*));
     cola_a_arr(cola, str_ordenado);
 
     liberar_mem(pila, cola, strv);
-    return join(str_ordenado, ' ');
+    char* str_polaca_inv = join(str_ordenado, ' ');
+    free_strv(str_ordenado);
+    return str_polaca_inv;
 }
 
 int main(int argc, char* argv[])

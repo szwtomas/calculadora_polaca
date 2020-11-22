@@ -6,6 +6,8 @@
 #include "strutil.h"
 #include "calc_helper.h"
 
+//Muestra por la salida estandar el resultado calculado, o un mensaje de error en caso de error matematico 
+// o en la misma expresion polaca inversa
 void mostrar_resultado(bool res_valido, long int resultado)
 {
     if(!res_valido)
@@ -16,11 +18,18 @@ void mostrar_resultado(bool res_valido, long int resultado)
     fprintf(stdout, "%li\n", resultado);
 }
 
+//Libera toda la memoria dinamica asociada a la calculadora
 void liberar_memoria(pilanum_t* pila, char** strv)
 {
     pilanum_destruir(pila);
     free_strv(strv);
 }
+
+/*
+FUNCIONES ARITMETICAS
+Las siguientes funciones resuelven todas las operaciones de la calculadora, almacenando el resultado en 'res'
+//En caso de error matematico devuelve false
+*/
 
 bool suma(calc_num sum_1, calc_num sum_2, calc_num* res)
 {
@@ -102,6 +111,9 @@ bool raiz_entera(calc_num n, calc_num* res)
 }
 
 
+//Elije la operacion indicada, la resuelve y devuelve si hubo algun error matematico
+//Pre-Condiciones: Los operandos fueron desapilados en el orden indicado en los parametros de cada operacion
+//Post-Condiciones: El resultado queda almacenado en 'res', devuelve false an caso error
 bool calcular(calc_num operandos[], enum oper_type op, calc_num* res)
 {
     switch(op)
